@@ -1,0 +1,60 @@
+ChilliCurry
+===========
+
+The Python comunity is again, at Python-ideas talking about a "currying operator" 
+to ease the number of parentheses in chanined-function calls.
+
+This is the module pitted on the discussion with an "expression decorator" 
+to ease function calls. 
+
+Just import "curry" from this module, and prefix your chain call with it -
+separate the functions one from another with a ".", and to the last
+function pass the object that should traverse the pipeline.
+
+Ex.: 
+```
+>>> from chillicurry import curry
+>>> curry.len.list.range(5,10)
+5
+```
+
+
+But that is not all -- the fast curry of chillicurry can chain up
+not only any callable available in the current scope, but also
+can use methods from the returned object -
+
+```
+>>> curry.split.upper.str("good morning Vietnam")
+['GOOD', 'MORNING', 'VIETNAM']
+
+```
+
+But what if one wants to define a lambda function in the middle
+of the call? 
+
+Fear not - with the awesome overriding of "|" in a poorly
+documented or predictable way, chillicurry adds support
+to inflight new expressions
+
+```
+>>> (curry|(lambda s: s * 2)).len.str("Python")
+12
+```
+
+And more, with the power of DELAY one can actually do what most
+people think currying should be: creating intermediate partial function
+calls which can be used on the chain. Just use the sentinel "DELAY"
+as first parameter.
+
+```
+>>> from chillicurry import curry, DELAY
+>>> from operator import mul
+>>> curry.mul(DELAY, 2).mul(DELAY, 3).complex.int(5)
+(30+0j)
+
+```
+
+
+Comming Soon to PyPi
+______________________
+
