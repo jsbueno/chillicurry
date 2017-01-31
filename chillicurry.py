@@ -23,11 +23,11 @@ try:
     from collections import ChainMap
 except ImportError:
     class ChainMap(dict):
-        """
-        Poorman's Python2 chainmap with getitem only
+        """Poor man's Python2 chainmap with getitem only.
         """
         def __init__(self, *mappings):
             self.mappings = mappings
+
         def __getitem__(self, key):
             for dct in self.mappings:
                 try:
@@ -36,7 +36,9 @@ except ImportError:
                     pass
             raise KeyError
 
+
 DELAY = object()
+
 
 class ChilliCurry(object):
     def __init__(self, previous=None):
@@ -79,7 +81,7 @@ class ChilliCurry(object):
                     try:
                         result = []
                         for item in value:
-                            result.append(getattr(item, op[0])(*self._args, **self._kw))  
+                            result.append(getattr(item, op[0])(*self._args, **self._kw))
                     except TypeError:
                         raise AttributeError(op[0])
             else:
@@ -88,4 +90,3 @@ class ChilliCurry(object):
         return value
 
 curry = ChilliCurry()
-
