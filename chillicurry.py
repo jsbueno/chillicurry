@@ -18,6 +18,7 @@
 # TODO: A way to transform a chillicurried chain into a giant robot with lasers
 
 import sys
+from itertools import chain
 
 try:
     from collections import ChainMap
@@ -38,6 +39,9 @@ except ImportError:
 
 
 DELAY = object()
+STAR = object()
+DSTAR = object()
+DOIT = object()
 
 
 class ChilliCurry(object):
@@ -62,7 +66,7 @@ class ChilliCurry(object):
         return ChilliCurry(self)
 
     def __or__(self, other):
-        # other is assumed a callable through which the chain should traverse
+        """Other is assumed a callable through which the chain should traverse."""
         self._current_op = other
         return ChilliCurry(self)
 
@@ -90,3 +94,64 @@ class ChilliCurry(object):
         return value
 
 curry = ChilliCurry()
+
+
+class Pipe(object):
+    def __init__(self, *args, **kw):
+        self._stack = []
+        self._args = args
+        self._kw = kw
+        self._frame = None
+
+    def _include_op(self, op):
+        if op is DOIT:
+            return self.__call__()
+        self._stack.append({'op': op})
+        if len(self._stack) == 1:
+            self._stack[0]['args'] = self._args
+            self._stack[0]['kw'] = self._kw
+        return self
+
+    def _merge(self, other):
+        self._stack.extend(other._stack)
+        return self
+
+    def __getattr__(self, attr):
+        if not self._frame:
+            frame = sys._getframe().f_back
+            self._frame = frame
+        else:
+            frame = self._frame
+        try:
+            op = ChainMap(frame.f_locals, frame.f_globals, frame.f_builtins)[attr]
+        except KeyError:
+            op = attr
+        return self._include_op(op)
+
+    def __or__(self, other):
+        if isinstance(other, Pipe):
+            return self._merge(other)
+        op = other
+        return self._include_op(op)
+
+    def _is_lazy_call(*args, **kw):
+        return any(arg in (DELAY, STAR, DSTAR) for arg in chain(args, kw.values()))
+
+    def __call__(self, *args, **kw):
+        if not self._is_lazy_call(args, kw):
+            next_args = []
+            for op_struct in self._stack:
+                op = op_struct['op']
+                if isinstance(op, str):
+                    op = getattr(args, op)
+                    next_args = ''
+                args = op(
+                    *chain(next_args, op_struct.get('args', [])),
+                    **op_struct.get('kw', {})
+                )
+                if (hasattr(args, '__len__') or hasattr(args, '__iter__')) and not isinstance(args, str):
+                    next_args = args
+                else:
+                    next_args = [args]
+            return args
+
